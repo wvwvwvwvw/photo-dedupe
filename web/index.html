@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图片查重 · 找出重复照片</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234d9dff'/%3E%3Cpath d='M18 40l9-11 7 8 5-6 7 9z' fill='%23fff'/%3E%3Ccircle cx='25' cy='24' r='4' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-view="image">
+
+<div class="app">
+
+  <!-- ================= 左侧导航 ================= -->
+  <aside class="side">
+    <div class="side-brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="3" y="5" width="12" height="12" rx="2"/>
+          <path d="M9 19h10a2 2 0 0 0 2-2V9"/>
+          <circle cx="7.5" cy="9.5" r="1.4" fill="currentColor" stroke="none"/>
+          <path d="M3 15l4-4 5 6" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-txt">
+        <strong>图片查重</strong>
+        <small>本机运行 · 不上传</small>
+      </div>
+    </div>
+
+    <div class="side-lang" title="界面语言 / Language / 言語">
+      <span class="ico">🌐</span>
+      <select id="langSel" aria-label="Language">
+        <option value="auto">跟随系统 / System</option>
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+
+    <nav class="nav" id="nav">
+      <div class="nav-group">
+        <span class="nav-label">查重</span>
+        <button class="nav-item on" data-view="image"><span class="ico">🖼</span>图片</button>
+        <button class="nav-item" data-view="video"><span class="ico">🎬</span>视频</button>
+        <button class="nav-item" data-view="audio"><span class="ico">🎵</span>音频</button>
+        <button class="nav-item" data-view="novel"><span class="ico">📖</span>小说</button>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">文本与压缩</span>
+        <button class="nav-item" data-view="clean"><span class="ico">🧹</span>广告过滤</button>
+        <button class="nav-item" data-view="conv"><span class="ico">🔤</span>繁简 / 编码</button>
+        <button class="nav-item" data-view="pack"><span class="ico">🗜</span>打包</button>
+        <button class="nav-item" data-view="unzip"><span class="ico">📂</span>解压</button>
+        <button class="nav-item" data-view="brute"><span class="ico">🔓</span>暴力破解</button>
+      </div>
+    </nav>
+
+    <div class="side-foot">
+      <button id="btnSettings" class="side-btn">
+        <span class="ico">⚙</span>设置
+      </button>
+      <button id="btnArchives" class="side-btn">
+        <span class="ico">🗄</span>存档
+      </button>
+      <div id="patchBar" class="patch-bar" hidden
+           title="老图库缺灰度指纹，第一次看分组时在后台低优先级补算，不影响使用">
+        <i></i><span id="patchText">补指纹…</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ================= 右侧主区 ================= -->
+  <div class="main">
+    <header class="head">
+      <div class="head-txt">
+        <h2 id="viewTitle">图片查重</h2>
+        <span id="viewHint" class="head-hint"></span>
+      </div>
+      <div class="head-acts" id="headActs">
+        <button id="btnScan" class="btn primary">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/><path d="M16.5 16.5L21 21"/>
+          </svg>
+          <span id="scanLabel">开始扫描</span>
+        </button>
+        <button id="btnPause" class="btn ghost" hidden>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/></svg>
+          暂停
+        </button>
+        <button id="btnResume" class="btn primary" hidden>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M8 5l11 7-11 7z"/></svg>
+          继续
+        </button>
+        <button id="btnStop" class="btn ghost danger" hidden>停止</button>
+      </div>
+      <div id="progress" class="progress" hidden>
+        <div class="bar"><i id="barFill"></i></div>
+        <div class="ptext">
+          <span id="pText">准备中…</span>
+          <span id="pRight" class="muted"></span>
+        </div>
+      </div>
+      <span id="tabHint" class="head-hint" hidden></span>
+    </header>
+
+    <div class="scroll" id="scroll">
+
+      <!-- 图片查重 -->
+      <section class="view on" id="view-image" data-view="image">
+<section id="imagePanel">
+  <div class="addbar">
+    <div class="pathbox">
+      <svg class="fi" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      </svg>
+      <input id="folder" type="text" spellcheck="false" autocomplete="off"
+             placeholder="添加照片文件夹，例如 E:\照片 或 D:\DCIM">
+      <button id="btnBrowse" class="mini ghost" title="浏览文件夹">浏览</button>
+    </div>
+    <button id="btnAdd" class="ghost">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M12 5v14M5 12h14"/>
+      </svg>
+      添加
+    </button>
+    <label class="chk" title="打开后：添加第一个文件夹时会立刻开始扫描">
+      <input type="checkbox" id="autoScan"><span>添加后自动扫描</span>
+    </label>
+    <label class="chk"><input type="checkbox" id="recursive" checked><span>含子文件夹</span></label>
+  </div>
+  <div id="rootChips" class="chips" hidden></div>
+</section>
+<section class="toolbar">
+  <div class="stats" id="stats">
+    <div class="chip"><b id="sImages">0</b><span>张图片</span></div>
+    <div class="chip"><b id="sGroups">0</b><span>组重复</span></div>
+    <div class="chip"><b id="sDup">0</b><span>张多余</span></div>
+    <div class="chip accent"><b id="sFree">0 MB</b><span>可释放</span></div>
+  </div>
+
+  <div class="filters">
+    <div class="field"
+         title="数值越小越严格。先用感知哈希筛候选，再用 16×16 灰度指纹二次确认（相关系数 ≥0.96 才算同图）">
+      <label>相似度阈值 <span class="muted" id="thHint">（哈希位数，越小越严）</span></label>
+      <input id="threshold" type="range" min="2" max="20" step="1" value="10">
+      <output id="thVal">10</output>
+    </div>
+    <div class="field">
+      <label>排序</label>
+      <select id="sort">
+        <option value="reclaim">可释放空间</option>
+        <option value="count">重复张数</option>
+        <option value="sim">相似度</option>
+        <option value="id">索引顺序</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>每组至少</label>
+      <select id="minSize">
+        <option value="2">2 张</option>
+        <option value="3">3 张</option>
+        <option value="4">4 张</option>
+        <option value="5">5 张</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>范围</label>
+      <select id="root"><option value="">全部已扫描</option></select>
+    </div>
+    <div class="field" id="recallWrap" title="超过 3 万张时启用分桶检索：标准≈94% 召回；彻底更慢但更全">
+      <label>检索强度</label>
+      <select id="recall">
+        <option value="fast">快速</option>
+        <option value="standard" selected>标准</option>
+        <option value="full">彻底</option>
+      </select>
+    </div>
+    <div class="spacer"></div>
+    <label class="chk" id="loadWrap" title="限制 CPU/显卡占用：百分比越低越安静、越慢">
+      <span>占用</span>
+      <select id="loadSel">
+        <option value="100">100%</option>
+        <option value="80">80%</option>
+        <option value="60">60%</option>
+        <option value="40">40%</option>
+        <option value="20">20%</option>
+      </select>
+    </label>
+    <div id="engineBadge" class="engine-badge" title="计算引擎">
+      <i></i><span id="engineText">引擎检测中…</span>
+    </div>
+    <button id="btnSmart" class="ghost" title="自动选择要删除的图片（可指定保留规则）">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9">
+        <path d="M5 12l4.5 4.5L19 7"/>
+      </svg>
+      自动选择
+    </button>
+    <button id="btnOther" class="ghost" title="没参与查重的文件：读不出来、后缀不对…" hidden>
+      其他文件 <span id="btnOtherNum" class="ot-num"></span>
+    </button>
+    <button id="btnExport" class="ghost" title="导出重复清单为 CSV">导出清单</button>
+  </div>
+</section>
+<div id="resumeBar" class="resume-bar" hidden>
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+  <span>上次有 <b id="resumeCount">0</b> 个文件夹没扫完，已完成的图片不会重复分析。</span>
+  <button id="btnResumeAll" class="primary mini">继续扫描</button>
+  <button id="btnIgnoreResume" class="ghost mini">忽略</button>
+</div>
+<main id="main">
+  <div id="empty" class="empty">
+    <div class="empty-art">
+      <svg viewBox="0 0 120 100" width="150" height="125" fill="none">
+        <rect x="10" y="18" width="64" height="52" rx="8" stroke="currentColor" stroke-width="2" opacity=".35"/>
+        <rect x="30" y="30" width="64" height="52" rx="8" stroke="currentColor" stroke-width="2" opacity=".65"/>
+        <circle cx="50" cy="48" r="5" stroke="currentColor" stroke-width="2"/>
+        <path d="M32 78l18-18 12 12 8-8 16 16" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <h2>先添加一个照片文件夹</h2>
+    <p>可以陆续添加多个文件夹，扫描结果会累积在一起对比。<br>
+       中途可以暂停，关掉程序下次继续，已分析过的图片不会重复计算。</p>
+    <button id="btnEmptyBrowse" class="primary">选择文件夹</button>
+    <div class="tips">
+      <span id="formatsHint">支持 JPG / PNG / WebP / BMP / GIF / TIFF / AVIF 等</span>
+      <span>所有分析都在本机完成，图片不会被上传</span>
+    </div>
+  </div>
+
+  <div id="groups"></div>
+  <div id="more" hidden><button id="btnMore" class="ghost">显示更多</button></div>
+</main>
+<footer class="actionbar" id="actionbar">
+  <div class="sum">
+    <span class="dot" id="selDot"></span>
+    <b id="selCount">0</b> 张已选
+    <span class="sep">·</span>
+    <span id="selSize">0 MB</span>
+  </div>
+  <div class="acts">
+    <button id="btnClearSel" class="ghost" disabled>清空选择</button>
+    <button id="btnMove" class="ghost" disabled>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9">
+        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5m-2.5-2.5L12 16l2.5-2.5"/>
+      </svg>
+      移到文件夹
+    </button>
+    <button id="btnTrash" class="danger solid" disabled>
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.9">
+        <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/>
+      </svg>
+      移到回收站
+    </button>
+  </div>
+</footer>
+      </section>
+
+      <!-- 视频 / 音频 / 小说（共用一套面板） -->
+      <section class="view" id="view-media" data-view="media" hidden>
+<section id="mediaPanel" hidden>
+  <div class="stats" id="mStats">
+    <div class="chip"><b id="mItems">0</b><span id="mItemsLabel">个文件</span></div>
+    <div class="chip"><b id="mGroups">0</b><span>组重复</span></div>
+    <div class="chip"><b id="mDup">0</b><span>个多余</span></div>
+    <div class="chip accent"><b id="mFree">0 MB</b><span>可释放</span></div>
+  </div>
+
+  <div class="filters m-filters">
+    <div class="field">
+      <label id="mThLabel">相似度阈值</label>
+      <input id="mThreshold" type="range" min="0.70" max="0.99" step="0.01" value="0.88">
+      <output id="mThVal">0.88</output>
+    </div>
+    <div class="field">
+      <label>每组至少</label>
+      <select id="mMin">
+        <option value="2">2 个</option>
+        <option value="3">3 个</option>
+        <option value="4">4 个</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>范围</label>
+      <select id="mRoot"><option value="">全部已扫描</option></select>
+    </div>
+    <button id="mScan" class="primary">开始扫描</button>
+    <button id="mPause" class="ghost" hidden>暂停</button>
+    <button id="mStop" class="ghost" hidden>停止</button>
+    <label class="chk" id="mContentWrap" hidden title="关闭后只按书名分组，不做正文比对（更快）">
+      <input type="checkbox" id="mContent" checked><span>正文分析</span>
+    </label>
+    <label class="chk" id="mAvWrap" hidden title="连同视频文件里的音轨一起查（适合整段视频自带音频的情况）">
+      <input type="checkbox" id="mAudioVideo"><span>含视频里的音轨</span>
+    </label>
+    <button id="mSmart" class="ghost" title="按规则勾选每组的重复项">自动选择</button>
+    <button id="mOther" class="ghost" title="没参与查重的文件：太小、打不开、动图…" hidden>
+      其他文件 <span id="mOtherNum" class="ot-num"></span>
+    </button>
+    <button id="mExport" class="ghost">导出清单</button>
+    <span class="engine-badge" id="mEngine"></span>
+  </div>
+
+  <div class="m-addbar">
+    <input id="mFolder" type="text" spellcheck="false" placeholder="添加文件夹，例如 D:\视频">
+    <button id="mBrowse" class="ghost">浏览</button>
+    <button id="mAdd" class="ghost">＋ 添加</button>
+    <label class="chk"><input type="checkbox" id="mRecursive" checked><span>含子文件夹</span></label>
+  </div>
+  <div id="mChips" class="chips"></div>
+
+  <div id="mProgress" class="m-progress" hidden></div>
+  <div id="mList" class="m-groups"></div>
+  <div id="mEmpty" class="empty"><p>还没有扫描结果</p><small>添加一个文件夹，然后点「开始扫描」</small></div>
+
+  <div id="mFooter" class="m-footer" hidden>
+    <span id="mSelInfo">0 项已选</span>
+    <div>
+      <button id="mClear" class="ghost">清空选择</button>
+      <button id="mMove" class="ghost">移到文件夹</button>
+      <button id="mTrash" class="danger solid">移到回收站</button>
+    </div>
+  </div>
+</section>
+      </section>
+
+      <!-- 广告过滤 -->
+      <section class="view" id="view-clean" data-view="clean" hidden>
+<section id="cleanPanel" hidden>
+  <div class="filters m-filters">
+    <div class="field">
+      <label>输入文件夹</label>
+      <input id="clSrc" type="text" class="cl-path" placeholder="要清洗的小说文件夹">
+    </div>
+    <button id="clSrcPick" class="ghost">浏览…</button>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field">
+      <label>输出文件夹</label>
+      <input id="clDst" type="text" class="cl-path" placeholder="清洗后的文件放这里（不会改原文件）">
+    </div>
+    <button id="clDstPick" class="ghost">浏览…</button>
+    <label class="chk"><input type="checkbox" id="clRecursive" checked><span>含子文件夹</span></label>
+    <button id="clStart" class="primary">开始过滤</button>
+    <button id="clStop" class="ghost" hidden>停止</button>
+  </div>
+  <div id="clProgress" class="m-progress" hidden></div>
+  <div id="clResult" class="m-groups"></div>
+  <div id="clEmpty" class="empty">
+    <p>小说广告过滤</p>
+    <small>选输入和输出文件夹 → 开始过滤。会去掉「本站域名 / 最新网址 / 求月票 / 章节报错」这类行和乱码分隔线，<b>原文件不动</b>。</small>
+  </div>
+</section>
+      </section>
+
+      <!-- 繁简 / 编码 -->
+      <section class="view" id="view-conv" data-view="conv" hidden>
+<section id="convPanel" hidden>
+  <div class="filters m-filters">
+    <div class="field">
+      <label>输入文件夹</label>
+      <input id="cvSrc" type="text" class="cl-path" placeholder="要转换的文本文件夹（txt/md/srt/html…）">
+    </div>
+    <button id="cvSrcPick" class="ghost">浏览…</button>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field">
+      <label>输出文件夹</label>
+      <input id="cvDst" type="text" class="cl-path" placeholder="转换后的文件放这里（原文件不动）">
+    </div>
+    <button id="cvDstPick" class="ghost">浏览…</button>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field opt-row">
+      <label class="field-title">怎么做</label>
+      <label class="chk"><input type="checkbox" id="cvT2S" checked><span>繁体 → 简体</span></label>
+      <label class="chk"><span>输出编码</span>
+        <select id="cvEnc">
+          <option value="utf-8" selected>UTF-8</option>
+          <option value="utf-8-sig">UTF-8（带 BOM）</option>
+          <option value="gbk">GBK / GB18030</option>
+          <option value="big5">BIG5（繁體）</option>
+          <option value="utf-16-le">UTF-16 LE</option>
+        </select>
+      </label>
+      <label class="chk"><span>换行</span>
+        <select id="cvNewline">
+          <option value="keep" selected>保持原样</option>
+          <option value="crlf">统一 CRLF</option>
+          <option value="lf">统一 LF</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="cvRecursive" checked><span>含子文件夹</span></label>
+    </div>
+    <button id="cvStart" class="primary">开始转换</button>
+    <button id="cvStop" class="ghost" hidden>停止</button>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field" style="flex:1 1 100%">
+      <label>先看一眼</label>
+      <textarea id="cvSample" class="uz-pwd" spellcheck="false"
+        placeholder="粘一段文字进来，点右边按钮看转换效果（不会动你的文件）"></textarea>
+    </div>
+    <button id="cvPaste" class="ghost">从剪贴板粘贴</button>
+    <button id="cvPreview" class="ghost">试一下</button>
+    <button id="cvCopyOut" class="ghost">复制结果</button>
+  </div>
+  <div id="cvOut" class="cv-out" hidden></div>
+  <div id="cvProgress" class="m-progress" hidden></div>
+  <div class="uz-main"><div id="cvLog" class="uz-log"><div class="muted">转换日志会显示在这里</div></div></div>
+</section>
+      </section>
+
+      <!-- 打包 -->
+      <section class="view" id="view-pack" data-view="pack" hidden>
+<section id="packPanel" hidden>
+  <div class="filters m-filters">
+    <div class="field">
+      <label>输入文件夹</label>
+      <input id="pkSrc" type="text" class="cl-path" placeholder="要打包的文件夹">
+    </div>
+    <button id="pkSrcPick" class="ghost">浏览…</button>
+    <div class="field"><label>模式</label>
+      <select id="pkMode">
+        <option value="single" selected>单次压缩：整个输入打成一个包</option>
+        <option value="batch">批量压缩：每个文件/文件夹各打一个包</option>
+      </select>
+    </div>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field">
+      <label>输出文件夹</label>
+      <input id="pkDst" type="text" class="cl-path" placeholder="打完的包写到这个文件夹">
+    </div>
+    <button id="pkDstPick" class="ghost">浏览…</button>
+  </div>
+
+  <div class="pk-flow">
+    <div class="pk-flow-head">
+      <b>压缩流程</b>
+      <span class="muted">按顺序执行，中间产物都在内存里，最后一步才写盘</span>
+    </div>
+    <ol id="pkSteps" class="pk-steps"></ol>
+    <div class="pk-add">
+      <select id="pkNewType">
+        <option value="pack" selected>压缩</option>
+        <option value="merge">合并再压一次</option>
+        <option value="split">拆分</option>
+        <option value="rename">改输出名</option>
+        <option value="flatten">拍平嵌套</option>
+      </select>
+      <button id="pkAdd" class="ghost">+ 添加步骤</button>
+      <button id="pkReset" class="ghost mini">恢复默认</button>
+      <span class="muted" id="pkStepHint"></span>
+    </div>
+    <div id="pkForm" class="pk-form" hidden></div>
+  </div>
+
+  <div class="filters m-filters" style="margin-top:10px">
+    <button id="pkStart" class="primary">运行流程</button>
+    <button id="pkStop" class="ghost" hidden>停止</button>
+    <span class="muted" id="pkSummary"></span>
+  </div>
+  <div id="pkProgress" class="m-progress" hidden></div>
+  <div class="uz-main"><div id="pkLog" class="uz-log"><div class="muted">运行日志会显示在这里</div></div></div>
+</section>
+      </section>
+
+      <!-- 解压 -->
+      <section class="view" id="view-unzip" data-view="unzip" hidden>
+<section id="unzipPanel" hidden>
+  <div class="filters m-filters">
+    <div class="field"><label>输入文件夹</label>
+      <input id="uzSrc" type="text" class="cl-path" placeholder="含压缩包的文件夹"></div>
+    <button id="uzSrcPick" class="ghost">浏览…</button>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field"><label>输出文件夹</label>
+      <input id="uzDst" type="text" class="cl-path" placeholder="每个包会解到各自的子目录"></div>
+    <button id="uzDstPick" class="ghost">浏览…</button>
+    <label class="chk"><input type="checkbox" id="uzRecursive" checked><span>含子文件夹</span></label>
+    <button id="uzStart" class="primary">开始解压</button>
+    <button id="uzStop" class="ghost" hidden>停止</button>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field"><label>密码本（每行一个）</label>
+      <textarea id="uzPwd" class="uz-pwd" spellcheck="false"
+        placeholder="每行一个密码（会连同「已破解密码」一起试）；留空表示只试空密码"></textarea></div>
+  </div>
+  <div class="filters m-filters" style="margin-top:8px">
+    <div class="field"><label>字典（可多选，和上面的密码本一起试）</label>
+      <select id="uzDictSel" class="uz-sel" multiple size="3"></select></div>
+    <button id="uzDictPick" class="ghost">读取外部…</button>
+    <button id="uzDictDl" class="ghost">下载…</button>
+    <button id="uzDictDel" class="ghost">删除</button>
+    <span class="muted" id="uzDictMsg"></span>
+  </div>
+  <div id="uzDictCat" class="uz-dictcat" hidden></div>
+
+  <div id="uzProgress" class="m-progress" hidden></div>
+  <div class="uz-found">
+    <div class="uz-found-head">
+      <b>已破解密码</b><span class="muted" id="uzFoundN">0</span>
+      <button id="uzFoundLoad" class="ghost mini">载入到密码本</button>
+      <span class="muted">（和破解页共用一本，解压时会自动参与）</span>
+    </div>
+    <div id="uzFound" class="uz-found-list"><span class="muted">还没有破解记录</span></div>
+  </div>
+  <div class="uz-main">
+    <div id="uzLog" class="uz-log"><div class="muted">解压日志会显示在这里</div></div>
+  </div>
+</section>
+      </section>
+
+      <!-- 暴力破解 -->
+      <section class="view" id="view-brute" data-view="brute" hidden>
+<section id="brutePanel" hidden>
+  <div class="br-box">
+    <div class="br-line">
+      <span class="br-label">目标</span>
+      <input id="brSrc" type="text" class="cl-path" placeholder="放压缩包的文件夹，或直接选一个压缩包">
+      <button id="brSrcPick" class="ghost">浏览…</button>
+      <button id="brFilePick" class="ghost">选压缩包</button>
+      <label class="chk"><input type="checkbox" id="brRecursive" checked><span>含子文件夹</span></label>
+    </div>
+
+    <div class="br-line">
+      <span class="br-label">怎么试</span>
+      <select id="brMode" class="br-sel">
+        <option value="auto">智能：先试密码本，再按位数穷举</option>
+        <option value="dict">只用密码本（可自动变形）</option>
+        <option value="digits">只按数字穷举</option>
+        <option value="mask">按字符集穷举（大小写/符号）</option>
+      </select>
+      <span class="muted" id="brTip">不知道密码长什么样就用默认的「智能」</span>
+    </div>
+
+    <div class="br-line br-col" id="brDictRow">
+      <span class="br-label">密码本</span>
+      <div class="br-grow">
+        <textarea id="brPwd" class="uz-pwd" spellcheck="false"
+          placeholder="每行一个密码；留空就只用下面的穷举"></textarea>
+        <div class="br-rules">
+          <span class="muted">变形：</span>
+          <label class="chk"><input type="checkbox" id="brRuleCase"><span>大小写</span></label>
+          <label class="chk"><input type="checkbox" id="brRuleLeet"><span>字母换数字（a→@）</span></label>
+          <label class="chk"><input type="checkbox" id="brRuleDigits"><span>末尾加数字</span></label>
+          <select id="brRuleDigitN" class="br-sel mini">
+            <option value="1">0-9</option>
+            <option value="2" selected>00-99</option>
+            <option value="3">000-999</option>
+            <option value="4">0000-9999</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="br-line" id="brDigitsRow">
+      <span class="br-label">位数</span>
+      <input id="brLen" type="number" min="1" max="12" value="6" class="uz-num">
+      <span class="muted">位（1 位到 N 位都试）</span>
+    </div>
+
+    <div class="br-line" id="brMaskRow" hidden>
+      <span class="br-label">字符集</span>
+      <select id="brCharset" class="br-sel">
+        <option value="digits">数字 0-9</option>
+        <option value="lower">小写 a-z</option>
+        <option value="upper">大写 A-Z</option>
+        <option value="letters">大小写</option>
+        <option value="alnum">数字+小写</option>
+        <option value="mix" selected>数字+大小写+符号</option>
+        <option value="symbols">符号</option>
+      </select>
+      <span>长度</span>
+      <input id="brMinLen" type="number" min="1" max="12" value="1" class="uz-num">
+      <span>~</span>
+      <input id="brMaxLen" type="number" min="1" max="12" value="6" class="uz-num">
+      <span class="muted">位</span>
+    </div>
+
+    <div class="br-line" id="brAffixRow" hidden>
+      <span class="br-label">前后缀</span>
+      <input id="brPre" type="text" class="uz-pre" placeholder="前缀（可空）">
+      <input id="brSuf" type="text" class="uz-pre" placeholder="后缀（可空）">
+      <span class="muted">会加在每个候选前面/后面，例如 abc123!</span>
+    </div>
+
+    <div class="br-est" id="brSpace">填好上面的选项，这里会显示要试多少组合、大概多久</div>
+
+    <div class="br-line br-actions">
+      <button id="brStart" class="primary">开始破解</button>
+      <button id="brPause" class="ghost" hidden>暂停</button>
+      <button id="brStop" class="ghost" hidden>停止</button>
+      <label class="chk" title="到时间自动停">
+        最多跑 <input id="brMaxMin" type="number" min="0" max="600" value="0" class="uz-num"> 分钟
+      </label>
+      <span class="muted" id="brHashcat">检测 GPU 中…</span>
+    </div>
+    <div class="muted" style="font-size:12px;margin-top:6px">
+      支持 zip / 7z（走显卡）、PDF / Office 2007+（CPU 校验）、RAR（靠 WinRAR 或 7-Zip 逐个试，约 200 个/秒）
+    </div>
+  </div>
+
+  <div id="brProgress" class="m-progress" hidden></div>
+
+  <div class="uz-found">
+    <div class="uz-found-head">
+      <b>已破解密码</b><span class="muted" id="brFoundN">0</span>
+      <button id="brFoundLoad" class="ghost mini">载入到密码本</button>
+      <span class="muted">（存在 data\passwords_found.txt，和解压页共用）</span>
+    </div>
+    <div id="brFound" class="uz-found-list"><span class="muted">还没有破解记录</span></div>
+  </div>
+
+  <details id="plainBox" class="br-box" style="margin-top:10px">
+    <summary class="muted" style="cursor:pointer">高级：已知明文攻击（ZipCrypto 专用，不需要知道密码）</summary>
+    <div class="br-line" style="margin-top:8px">
+      <span class="br-label">压缩包</span>
+      <input id="plZip" type="text" class="cl-path" placeholder="传统加密（ZipCrypto）的 zip；AES 包用不了这招">
+      <button id="plPickZip" class="ghost">选压缩包</button>
+    </div>
+    <div class="br-line br-col">
+      <span class="br-label">已知明文</span>
+      <div class="br-grow">
+        <textarea id="plText" class="uz-pwd" spellcheck="false"
+          placeholder="粘贴 12 字节以上、和包里某个文件开头一致的明文（例如你知道原文件的内容）"></textarea>
+        <div class="br-rules">
+          <label class="chk"><input type="checkbox" id="plAuto" checked><span>自动猜文件头（不用填明文，只对不压缩的加密条目有效）</span></label>
+        </div>
+        <div class="br-rules">
+          <span>或明文文件</span>
+          <input id="plFile" type="text" class="cl-path" style="flex:1 1 220px" placeholder="选一个文件，用它的内容当明文">
+          <button id="plPickFile" class="ghost mini">选文件</button>
+          <span>偏移</span><input id="plOffset" type="number" min="0" value="0" class="uz-num">
+          <label class="chk"><input type="checkbox" id="plRecover" checked><span>顺便反推原密码</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="br-line">
+      <button id="plStart" class="primary">开始明文攻击</button>
+      <button id="plStop" class="ghost" hidden>停止</button>
+      <span class="muted" id="plStatus"></span>
+    </div>
+    <pre id="plLog" class="uz-log" hidden style="max-height:180px;margin-top:8px"></pre>
+    <div id="plResult" class="br-est" hidden></div>
+  </details>
+
+  <div class="uz-main">
+    <details id="brLogBox">
+      <summary class="muted">破解日志（点开看细节）</summary>
+      <div id="brLog" class="uz-log"><div class="muted">日志会显示在这里</div></div>
+    </details>
+  </div>
+</section>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- 对比窗口 -->
+<div id="compare" class="modal" hidden>
+  <div class="modal-card wide">
+    <div class="mhead">
+      <div class="mtitle">
+        <b id="cmpTitle">对比</b>
+        <span id="cmpSub" class="muted"></span>
+      </div>
+      <div class="mtabs">
+        <button data-mode="overlay" class="on">叠加</button>
+        <button data-mode="side">并排</button>
+        <button data-mode="diff">差异</button>
+      </div>
+      <div class="mzoom">
+        <button id="zoomOut" class="icon" title="缩小">−</button>
+        <button id="zoomReset" class="icon" title="适应窗口">100%</button>
+        <button id="zoomIn" class="icon" title="放大">+</button>
+        <button id="cmpClose" class="icon close" title="关闭">✕</button>
+      </div>
+    </div>
+
+    <div class="stage" id="stage" data-mode="overlay">
+      <div class="pane paneA">
+        <img id="imgA" alt="">
+      </div>
+      <div class="pane paneB">
+        <img id="imgB" alt="">
+      </div>
+      <span class="pane-tag tagA">保留</span>
+      <span class="pane-tag tagB" id="tagB">对比</span>
+      <div class="divider" id="divider"></div>
+      <div class="handle" id="handle"><i></i></div>
+    </div>
+
+    <div class="cmp-foot">
+      <div class="cmp-nav">
+        <button id="cmpPrev" class="icon" title="上一张">‹</button>
+        <span id="cmpPos" class="muted">1 / 3</span>
+        <button id="cmpNext" class="icon" title="下一张">›</button>
+      </div>
+      <div class="cmp-info" id="cmpInfo"></div>
+      <div class="cmp-actions">
+        <button id="cmpReveal" class="ghost">打开所在文件夹</button>
+        <button id="cmpKeep" class="ghost">设为此张保留</button>
+        <button id="cmpMark" class="danger solid">标记删除</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 小说预览 -->
+<div id="preview" class="modal" hidden>
+  <div class="modal-card wide" style="height:min(86vh,900px)">
+    <div class="mhead">
+      <b id="pvTitle">预览</b>
+      <span class="muted" id="pvMeta"></span>
+      <button id="pvClose" class="icon close">✕</button>
+    </div>
+    <div class="pv-body" id="pvBody"></div>
+    <div class="bfoot">
+      <span class="muted" id="pvFoot"></span>
+      <div>
+        <button id="pvPath" class="ghost">打开所在文件夹</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 其他文件（没参与查重的：太小 / 打不开 / 后缀不匹配 / 动图） -->
+<div id="other" class="modal" hidden>
+  <div class="modal-card wide ot-card">
+    <div class="mhead">
+      <b id="otTitle">其他文件</b>
+      <span class="muted" id="otMeta"></span>
+      <button id="otClose" class="icon close">✕</button>
+    </div>
+    <div class="ot-body">
+      <div class="ot-hint" id="otHint">
+        这些文件没有参与查重：体积太小、读不出来、后缀和真实内容对不上，或者只是动图。
+        仍然可以点「预览」看一眼，或「用系统程序打开」。
+      </div>
+      <div id="otList" class="ot-list"></div>
+    </div>
+    <div class="bfoot">
+      <span class="muted" id="otFoot"></span>
+      <div>
+        <button id="otReveal" class="ghost" hidden>打开所在文件夹</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 媒体预览（视频 / 音频） -->
+
+<div id="mplay" class="modal" hidden>
+  <div class="modal-card wide mp-card">
+    <div class="mhead">
+      <b id="mpTitle">预览</b>
+      <span class="muted" id="mpMeta"></span>
+      <button id="mpClose" class="icon close">✕</button>
+    </div>
+    <div class="mp-body">
+      <div id="mpWaveBox" class="mp-wave-box" hidden>
+        <canvas id="mpWave"></canvas>
+        <div class="mp-wave-tip" id="mpWaveTip">点一下波形可以跳转</div>
+      </div>
+      <img id="mpImage" alt="" hidden>
+      <video id="mpVideo" controls playsinline preload="metadata" hidden></video>
+      <audio id="mpAudio" controls preload="metadata" hidden></audio>
+      <div id="mpMissing" class="mp-missing" hidden>
+        文件读不到，可能已经被移动或删除
+      </div>
+      <div id="mpStrip" class="mp-strip"></div>
+    </div>
+    <div class="bfoot">
+      <span class="muted" id="mpFoot"></span>
+      <div class="mp-nav">
+        <button id="mpPrev" class="ghost" title="同组上一个">◀ 上一个</button>
+        <button id="mpNext" class="ghost" title="同组下一个">下一个 ▶</button>
+        <button id="mpOpen" class="ghost" title="编码浏览器放不了（如 HEVC/MKV/rmvb）时用这个">系统播放器</button>
+        <button id="mpPath" class="ghost">打开所在文件夹</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 文件夹选择 -->
+<div id="browser" class="modal" hidden>
+  <div class="modal-card narrow">
+    <div class="mhead">
+      <b id="browseTitle">选择文件夹</b>
+      <button id="browseClose" class="icon close">✕</button>
+    </div>
+    <div class="browse-path">
+      <button id="browseUp" class="icon" title="上一级">↑</button>
+      <input id="browseInput" type="text" spellcheck="false" placeholder="输入路径后回车">
+    </div>
+    <div id="browseList" class="browse-list"></div>
+    <div class="bfoot">
+      <span id="browseHint" class="muted"></span>
+      <div>
+        <button id="browseCancel" class="ghost">取消</button>
+        <button id="browseOk" class="primary">添加此文件夹</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 存档 -->
+<div id="archives" class="modal" hidden>
+  <div class="modal-card arch">
+    <div class="mhead">
+      <b>存档</b>
+      <span class="muted">把这次的扫描结果存下来，下次直接接着用，不用重扫</span>
+      <button id="arClose" class="icon close">✕</button>
+    </div>
+
+    <div class="ar-body">
+
+      <!-- 类型切换 -->
+      <div class="ar-scope">
+        <button class="ar-tab on" data-scope="image">🖼 图片</button>
+        <button class="ar-tab" data-scope="video">🎬 视频</button>
+        <button class="ar-tab" data-scope="audio">🎵 音频</button>
+        <button class="ar-tab" data-scope="novel">📖 小说</button>
+        <span class="muted" id="arScopeHint"></span>
+      </div>
+
+      <!-- ① 保存 -->
+      <section class="ar-sec">
+        <div class="ar-sec-head">
+          <span class="ar-step">1</span>
+          <b>保存当前结果</b>
+          <span class="ar-sec-tip">把现在索引里的记录写成一个存档文件</span>
+        </div>
+        <div class="ar-save">
+          <div class="ar-now">
+            <span id="arNow" class="ar-now-main">—</span>
+            <span id="arEst" class="ar-est"></span>
+          </div>
+          <div class="ar-row">
+            <input id="arName" type="text" maxlength="60" spellcheck="false"
+                   placeholder="给这次结果起个名字，例如：2024 家庭照片">
+            <button id="arSave" class="primary">保存当前结果</button>
+          </div>
+          <div id="arHint" class="ar-hint" hidden></div>
+          <div class="ar-note">
+            存档只保存索引（路径 / 哈希 / 尺寸），<b>不含图片本身，也不含缩略图</b>；
+            载入后会先在后台补算灰度指纹，再继续分组。
+          </div>
+        </div>
+      </section>
+
+      <!-- ② 存档列表 -->
+      <section class="ar-sec">
+        <div class="ar-sec-head">
+          <span class="ar-step">2</span>
+          <b>我的存档</b>
+          <span class="ar-sec-tip" id="arCountTip"></span>
+          <span class="ar-legend">
+            <b>载入</b> 用存档替换当前结果 ·
+            <b>合并</b> 把存档并进当前结果 ·
+            <b>覆盖</b> 用当前结果重写这个存档
+          </span>
+        </div>
+        <div id="arList" class="ar-list"></div>
+      </section>
+
+      <div class="bfoot">
+        <span class="muted">存档目录：<code id="arDir">—</code></span>
+        <div>
+          <button id="arVerify" class="ghost" title="把磁盘上已经不存在（被移动或删除）的照片从索引里清掉">校验失效文件</button>
+          <button id="arImport" class="ghost" title="挑一个 .json 存档文件导入（会记住上次的位置）">导入存档文件…</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 确认 -->
+<div id="confirm" class="modal" hidden>
+  <div class="modal-card confirm">
+    <div class="mhead"><b id="cfTitle">确认操作</b><button id="cfClose" class="icon close">✕</button></div>
+    <div class="cbody">
+      <p id="cfText"></p>
+      <div id="cfList" class="cf-list"></div>
+      <div class="cf-mode">
+        <label class="radio"><input type="radio" name="cfmode" value="trash" checked>
+          <span><b>移到回收站</b><small>可以在系统回收站里还原</small></span></label>
+        <label class="radio"><input type="radio" name="cfmode" value="move">
+          <span><b>移到文件夹</b><small>保留文件，只是搬到别处</small></span></label>
+      </div>
+      <div id="cfDestWrap" class="cf-dest" hidden>
+        <input id="cfDest" type="text" spellcheck="false" placeholder="目标文件夹，不存在会自动创建">
+        <button id="cfPick" class="ghost">选择…</button>
+      </div>
+    </div>
+    <div class="cfoot">
+      <button id="cfCancel" class="ghost">取消</button>
+      <button id="cfOk" class="danger solid">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 对比更新文件夹 -->
+<div id="diff" class="modal" hidden>
+  <div class="modal-card confirm" style="width:min(580px,94vw)">
+    <div class="mhead"><b>对比文件夹</b><span class="muted" id="dfRoot"></span>
+      <button id="dfClose" class="icon close">✕</button></div>
+    <div class="cbody">
+      <div id="dfBody" class="df-body">正在统计…</div>
+    </div>
+    <div class="cfoot">
+      <button id="dfCancel" class="ghost">取消</button>
+      <button id="dfGo" class="primary" disabled>只更新这个文件夹</button>
+    </div>
+  </div>
+</div>
+
+<!-- 自动选择 -->
+<div id="auto" class="modal" hidden>
+  <div class="modal-card confirm" style="width:min(600px,94vw)">
+    <div class="mhead"><b>自动选择待删除</b><span class="muted">按规则勾选，再统一处理</span>
+      <button id="auClose" class="icon close">✕</button></div>
+    <div class="cbody">
+      <section class="st-sec">
+        <h4>范围</h4>
+        <label class="radio"><input type="radio" name="auscope" value="groups" checked>
+          <span><b>所有重复组</b><small>每组保留一张，其余勾选（相似度阈值内）</small></span></label>
+        <label class="radio"><input type="radio" name="auscope" value="exact">
+          <span><b>只处理完全相同的文件</b><small>按文件内容分组，每组留一张，其余勾选</small></span></label>
+      </section>
+
+      <section class="st-sec">
+        <h4>保留哪一张</h4>
+        <div class="st-row">
+          <select id="auKeep">
+            <option value="quality">画质最高（分辨率+清晰度+压缩）</option>
+            <option value="newest">最新修改</option>
+            <option value="oldest">最早修改</option>
+            <option value="resolution">分辨率最高</option>
+            <option value="folders">按文件夹（见下方）</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="st-sec" id="auFolderWrap" hidden>
+        <h4>文件夹（可多选）</h4>
+        <div id="auFolders" class="au-folders"></div>
+        <button id="auAddFolder" class="ghost mini">＋ 添加文件夹…</button>
+        <div class="au-mode">
+          <label class="radio"><input type="radio" name="aufmode" value="drop" checked>
+            <span><b>删除这些文件夹里的</b><small>其它位置的副本保留</small></span></label>
+          <label class="radio"><input type="radio" name="aufmode" value="keep">
+            <span><b>只保留这些文件夹里的</b><small>这些文件夹以外的副本全部勾选</small></span></label>
+        </div>
+      </section>
+
+      <div class="st-hint" id="auPreview">选好规则后点「计算」，看看会选中多少张。</div>
+    </div>
+    <div class="cfoot">
+      <button id="auCalc" class="ghost">计算</button>
+      <button id="auApply" class="primary" disabled>全选这些</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置 -->
+<div id="settings" class="modal" hidden>
+  <div class="modal-card narrow" style="height:auto;max-height:88vh">
+    <div class="mhead">
+      <b>设置</b>
+      <span class="muted">保存在 settings.json，重启后依然生效</span>
+      <button id="stClose" class="icon close">✕</button>
+    </div>
+    <div class="cbody">
+<section class="st-sec">
+        <h4>算力分配</h4>
+        <div class="st-row">
+          <select id="stEngine">
+            <option value="auto">自动（每次扫描时现场对比）</option>
+            <option value="gpu">GPU 优先</option>
+            <option value="cpu">CPU</option>
+          </select>
+          <input id="stWorkers" type="number" min="0" max="128" step="1" placeholder="线程数 0=自动">
+          <label class="chk"><span>占用</span>
+            <select id="stLoad">
+              <option value="100">100%（满速）</option>
+              <option value="80">80%</option>
+              <option value="60">60%</option>
+              <option value="40">40%</option>
+              <option value="20">20%</option>
+            </select>
+          </label>
+        </div>
+        <div class="st-hint" style="margin-top:6px">
+          占用越低越安静：CPU 线程数按比例减、显卡按比例间歇工作。扫描中途改设置，下次扫描生效。
+        </div>
+        <div class="st-hint" id="stBench">
+          还没有测速记录。运行「重新测速.bat」可以测出这台电脑最适合的配置并写进这里。
+        </div>
+      </section>
+
+      <section class="st-sec">
+        <h4>保存频率</h4>
+        <div class="st-row">
+          <select id="stFlush">
+            <option value="safe">安全：每 100 张 / 1 秒</option>
+            <option value="balanced">平衡：每 500 张 / 4 秒（推荐）</option>
+            <option value="disk">省盘：每 2000 张 / 15 秒</option>
+            <option value="max">极致省盘：每 10000 张 / 60 秒</option>
+          </select>
+        </div>
+        <div class="st-hint">
+          扫描不是每张都写盘，而是攒够一批提交一次事务。间隔越大，硬盘写入越少；
+          程序被强退时最多重扫这一批（已落库的不会重算）。
+        </div>
+      </section>
+    </div>
+    <div class="cfoot">
+      <button id="stCancel" class="ghost">取消</button>
+      <button id="stSave" class="primary">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts"></div>
+
+<!-- 通用确认 -->
+<div id="ask" class="modal" hidden>
+  <div class="modal-card confirm" style="width:min(460px,92vw)">
+    <div class="mhead"><b id="askTitle">确认</b></div>
+    <div class="cbody"><p id="askText"></p></div>
+    <div class="cfoot">
+      <div id="askStd" class="ask-btns">
+        <button id="askCancel" class="ghost">取消</button>
+        <button id="askOk" class="danger solid">确定</button>
+      </div>
+      <div id="askCustom" class="ask-btns" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/i18n.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

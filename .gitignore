@@ -1,0 +1,40 @@
+﻿# 运行时数据（本地扫描结果、缩略图、存档、密码本）
+data/
+dictionary.db
+*.db
+*.db-wal
+*.db-shm
+
+# 本机设置（含个人路径）
+settings.json
+settings.json.tmp
+
+# 内置运行时 / 外部工具 / 字典（体积大，不入库）
+runtime/
+vendor/
+dicts/
+
+# 便携包相关
+*.zip
+*.7z
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# 测试产物
+_test/_*/
+tests/_*/
+*.log
+docs/*.png
