@@ -1,5 +1,8 @@
 # 图片查重 · 本地媒体去重工具箱
 
+> **这是源码仓库。** 想直接双击运行、不折腾 Python 的话，请用 Release 里的便携包
+> （自带 runtime\ 和 vendor\ 工具，3.6 GB 左右）。源码运行方式见下面「从源码运行」。
+
 一个**绿色、单目录、双击就能跑**的 Windows 工具：查重复照片，顺手也能查视频、音频、小说，
 外加打包 / 解压 / 繁简转换 / 小说广告过滤 / 压缩包密码破解。
 
@@ -48,6 +51,40 @@ runtime\python.exe app.py --port 8765 --engine auto --load 100
 ```
 
 ---
+
+## 从源码运行
+
+需要 **Windows + Python 3.10 ~ 3.13**（实测 3.12）。
+
+```bat
+:: 1) 装依赖（建议用虚拟环境）
+python -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+
+:: 2) 可选：GPU 加速
+::    NVIDIA（图片查重能吃 nvJPEG）
+.venv\Scripts\python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+::    任意 DX12 显卡（视频特征加速，图片也能走 DirectML）
+.venv\Scripts\python -m pip install onnxruntime-directml
+
+:: 3) 启动
+启动.bat
+```
+
+`启动.bat` 会自动找 `.venv`、`runtime\` 或系统 Python。
+
+### 外部工具（可选，不装也能用核心功能）
+
+| 工具 | 放哪里 | 用途 | 不装的后果 |
+| --- | --- | --- | --- |
+| 7-Zip 的 `7za.exe` | `vendor\7z\7za.exe` 或 `7z.txt` 写路径 | 7z / RAR / 分卷 | 只能处理 zip |
+| `ffmpeg.exe` | `vendor\ffmpeg.exe` | 视频/音频查重、缩略图、波形 | 这两类查重不可用 |
+| `mobilenetv2-7-feat.onnx` | `vendor\` | 视频画面特征 | 视频只能按 pHash 比 |
+| `hashcat` | `vendor\hashcat\hashcat-8.0.0` | 显卡破解密码 | 退回 CPU 校验 |
+| `bkcrack.exe` | `vendor\bkcrack` | ZipCrypto 明文攻击 | 明文攻击不可用 |
+| 字典 `*.txt` | `dicts\` | 破解/解压的密码本 | 可用界面里的「下载」或自备 |
+
+> 这些二进制**不在本仓库里**（体积/许可原因）。Release 的便携包已经打包好。
 
 ## 界面导览
 
@@ -434,13 +471,12 @@ runtime\python.exe -m pip uninstall -y torch torchvision
 ├─ app.py                 HTTP 服务 + 业务（扫描/分组/打包/破解/存档…）
 ├─ bench.py               测速
 ├─ settings.json          设置（引擎、线程、占用、存档位置、保存频率）
-├─ runtime\               内置 Python 3.12 + 依赖（便携，无需安装）
-├─ vendor\                7za / ffmpeg / hashcat / ONNX 模型 / 破解工具 / 文件夹选择器
+├─ runtime\               （可选）内置 Python，只有便携包里有
+├─ vendor\               （可选）7za / ffmpeg / hashcat / ONNX 模型
 ├─ web\                   index.html · app.js · style.css（界面）
 ├─ dedupe\                图片查重（哈希、索引、分组、引擎、存档、指纹补算）
 ├─ media\                 媒体查重 + 打包/解压/转换/过滤/破解（zip/7z/pdf/office/rar）
 ├─ data\                  索引库、缩略图、存档、密码本、日志
-├─ docs\                  截图
 └─ _test\                 自测脚本（`_test\test_*.py`）
 ```
 
