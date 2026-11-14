@@ -52,6 +52,24 @@ runtime\python.exe app.py --port 8765 --engine auto --load 100
 
 ---
 
+## 下载便携版（不用装 Python）
+
+到 [Releases](https://github.com/wvwvwvwvw/photo-dedupe/releases/latest) 下载，两个版本：
+
+| | **完整版**（1.73 GB） | **精简版**（111 MB） |
+| --- | --- | --- |
+| 图片查重 | CPU + **GPU 混合**（NVIDIA CUDA，实测 237 张/秒） | CPU 多线程（约 190 张/秒） |
+| 视频 / 音频 / 小说查重 | ✅（特征走 DirectML） | ✅（特征走 DirectML） |
+| 打包 / 解压 / 破解 / 转换 | ✅ | ✅ |
+| 自带 CUDA 版 PyTorch | ✅（约 2.4 GB） | ❌ |
+| 适合 | NVIDIA 显卡、图库大、想跑满速 | 核显 / AMD、只想清重复照片、想快点下完 |
+
+**功能完全一样，唯一区别是「图片查重能不能用 NVIDIA 显卡加速」。** 精简版事后双击
+`安装 DirectML 加速.bat` 也能让 AMD/Intel/NVIDIA 走显卡。
+
+安装：下载 `photo-dedupe-full-v1.1.7z`（或 slim）+ `extract-helper.zip` → 解压 helper →
+双击 `一键解压并启动.bat` → 自动解压并启动。
+
 ## 从源码运行
 
 需要 **Windows + Python 3.10 ~ 3.13**（实测 3.12）。
